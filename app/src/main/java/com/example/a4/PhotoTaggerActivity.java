@@ -103,7 +103,7 @@ public class PhotoTaggerActivity extends AppCompatActivity {
         HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         Vision.Builder builder = new Vision.Builder(httpTransport, jsonFactory, null);
-        builder.setVisionRequestInitializer(new VisionRequestInitializer(""));
+        builder.setVisionRequestInitializer(new VisionRequestInitializer(Key.API_KEY));
         Vision vision = builder.build();
 
         // CALL Vision.Images.Annotate
