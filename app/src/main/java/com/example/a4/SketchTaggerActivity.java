@@ -15,7 +15,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -50,6 +49,8 @@ public class SketchTaggerActivity extends AppCompatActivity {
     TextView tagField;
     EditText searchField;
     ListView lv;
+    ListItemAdapter adapter;
+    MyDrawingArea mda;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +59,7 @@ public class SketchTaggerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sketch_tagger);
 
         listData = new ArrayList<>();
-        ListItemAdapter adapter = new ListItemAdapter(this, R.layout.list_item, listData);
+        adapter = new ListItemAdapter(this, R.layout.list_item, listData);
 
         lv = findViewById(R.id.sketch_list);
         lv.setAdapter(adapter);
@@ -69,6 +70,9 @@ public class SketchTaggerActivity extends AppCompatActivity {
         tagField = findViewById(R.id.generated_tags);
         searchField = findViewById(R.id.tag_search_edit_box);
 
+        ArrayList<ListItem> latestImages = showLatestImages();
+        adapter.updateData(latestImages);
+
         Button backButton = findViewById(R.id.btnBack);
         backButton.setOnClickListener(v -> {
             Intent intent = new Intent(SketchTaggerActivity.this, MainActivity.class);
@@ -76,12 +80,29 @@ public class SketchTaggerActivity extends AppCompatActivity {
         });
     }
 
+    public ArrayList<ListItem> showLatestImages() {
+        Cursor c = db.rawQuery("SELECT * FROM IMAGES", null);
+        ArrayList<ListItem> latestImages = new ArrayList<>();
+
+        //not sure why but for some reason move to last is pointing to the 2nd to last image??
+        //so we need to go to the actual last one with next
+        c.moveToLast();
+        c.moveToNext();
+        while (c.moveToPrevious()) {
+            byte[] ba = c.getBlob(0);
+            String date = c.getString(1);
+            String tags = c.getString(2);
+
+            latestImages.add(new ListItem(BitmapFactory.decodeByteArray(ba, 0, ba.length), tags + "\n" + date));
+        }
+        c.close();
+        return latestImages;
+    }
+
     public void onClassify(View view) {
-        MyDrawingArea mda = findViewById(R.id.drawing_area);
+        mda = findViewById(R.id.drawing_area);
 
         Bitmap bm = mda.getBitmap();
-        ImageView tester = findViewById(R.id.tester);
-        tester.setImageBitmap(bm);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -125,7 +146,7 @@ public class SketchTaggerActivity extends AppCompatActivity {
         HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         Vision.Builder builder = new Vision.Builder(httpTransport, jsonFactory, null);
-        builder.setVisionRequestInitializer(new VisionRequestInitializer(""));
+        builder.setVisionRequestInitializer(new VisionRequestInitializer(Key.API_KEY));
         Vision vision = builder.build();
 
         // CALL Vision.Images.Annotate
@@ -162,14 +183,13 @@ public class SketchTaggerActivity extends AppCompatActivity {
     }
 
     public void searchTags(View view) {
-        MyDrawingArea blank = findViewById(R.id.blank_drawing_area);
-        Bitmap bbb = blank.getBitmap();
         Cursor c;
         String tagText = searchField.getText().toString();
         ArrayList<ListItem> searchResults = new ArrayList<>();
 
         if (tagText.equals("")) {
-            c = db.rawQuery("SELECT * FROM IMAGES ORDER BY DATE ASC", null);
+            c = db.rawQuery("SELECT * FROM IMAGES", null);
+            searchResults = showLatestImages();
         } else {
             try {
                 //split search on commas
@@ -206,8 +226,6 @@ public class SketchTaggerActivity extends AppCompatActivity {
                     String date = c.getString(1);
                     String tagsInDatabase = c.getString(2);
 
-                    //Bitmap bm = BitmapFactory.decodeByteArray(ba, 0, ba.length);
-
                     searchResults.add(new ListItem(BitmapFactory.decodeByteArray(ba, 0, ba.length), tagsInDatabase + "\n" + date));
 
                     position++;
@@ -216,7 +234,7 @@ public class SketchTaggerActivity extends AppCompatActivity {
                 System.out.println("Ouch!");
             }
         }
-        ((ListItemAdapter) lv.getAdapter()).updateData(searchResults);
+        adapter.updateData(searchResults);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -247,7 +265,7 @@ public class SketchTaggerActivity extends AppCompatActivity {
 
     public void onClear(View view) {
         MyDrawingArea mda = findViewById(R.id.drawing_area);
-        tagField.setText("");
+        tagField.setText("Draw and classify an image");
         mda.clear();
     }
 }

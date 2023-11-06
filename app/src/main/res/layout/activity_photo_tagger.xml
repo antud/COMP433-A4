@@ -23,12 +23,12 @@
             android:layout_marginLeft="10pt"
             android:text="Tags: " />
 
-        <TextView
+        <EditText
             android:id="@+id/generated_tags"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_marginLeft="10pt"
-            android:text="Please take a picture for classification" />
+            android:text="Please take a picture" />
     </LinearLayout>
 
     <LinearLayout
