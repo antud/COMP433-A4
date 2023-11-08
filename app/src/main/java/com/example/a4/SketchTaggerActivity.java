@@ -101,7 +101,6 @@ public class SketchTaggerActivity extends AppCompatActivity {
 
     public void onClassify(View view) {
         mda = findViewById(R.id.drawing_area);
-
         Bitmap bm = mda.getBitmap();
         new Thread(new Runnable() {
             @Override
@@ -128,7 +127,7 @@ public class SketchTaggerActivity extends AppCompatActivity {
 
     void myVisionTester(Bitmap image, VisionCallback callback) throws IOException {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        image.compress(Bitmap.CompressFormat.JPEG, 90, bout);
+        image.compress(Bitmap.CompressFormat.PNG, 100, bout);
         Image myimage = new Image();
         myimage.encodeContent(bout.toByteArray());
 
